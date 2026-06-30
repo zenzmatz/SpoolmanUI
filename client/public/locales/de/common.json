@@ -46,6 +46,23 @@
         "saveSuccessful": "Erfolgreich gespeichert!",
         "validationError": "Validierungsfehler: {{error}}"
     },
+    "auth": {
+        "login": {
+            "title": "Anmelden",
+            "description": "Für diese Spoolman-Instanz ist eine Anmeldung erforderlich.",
+            "username": "Benutzername",
+            "password": "Passwort",
+            "submit": "Anmelden",
+            "username_required": "Bitte gib deinen Benutzernamen ein.",
+            "password_required": "Bitte gib dein Passwort ein."
+        },
+        "errors": {
+            "login_failed": "Anmeldung fehlgeschlagen."
+        },
+        "values": {
+            "never": "Nie"
+        }
+    },
     "loading": "Läd",
     "version": "Version",
     "unknown": "Unbekannt",
@@ -397,6 +414,53 @@
                 "label": "Schwellwert für niedrigen Bestand (%)",
                 "tooltip": "Wenn der Modus für niedrigen Bestand auf verbleibenden Prozentsatz gesetzt ist, werden Spulen mit diesem Prozentsatz oder weniger in den Einblicken als niedriger Bestand angezeigt."
             }
+        },
+        "access": {
+            "tab": "Zugriff",
+            "description": "Erstelle API-Tokens für Integrationen und überprüfe die aktiven Zugangsdaten dieses Kontos.",
+            "auth_disabled": "Die Authentifizierung ist für diese Spoolman-Instanz derzeit deaktiviert.",
+            "api_tokens_title": "API-Tokens",
+            "create_token": "Token erstellen",
+            "create_success": "Token erstellt.",
+            "revoke": "Widerrufen",
+            "revoke_confirm": "Dieses Token widerrufen?",
+            "revoke_success": "Token widerrufen.",
+            "latest_token": "Neues Token",
+            "latest_token_help": "Kopiere dieses Token jetzt. Es wird nur einmal angezeigt.",
+            "token_name": {
+                "label": "Token-Name",
+                "tooltip": "Verwende einen aussagekräftigen Namen, damit du erkennst, welche Integration dieses Token nutzt.",
+                "required": "Bitte gib einen Token-Namen ein."
+            },
+            "expires_in_days": {
+                "label": "Läuft ab in (Tagen)",
+                "tooltip": "Lege fest, wie lange dieses Token gültig bleiben soll."
+            },
+            "hardware": {
+                "title": "Hardware koppeln",
+                "description": "Erstelle einen kurzen einmaligen Code für Hardware wie SpoolmanScale. Das Gerät tauscht diesen Code gegen ein gespeichertes API-Token ein.",
+                "create_code": "Hardware-Code erstellen",
+                "create_success": "Hardware-Kopplungscode erstellt.",
+                "latest_code": "Hardware-Kopplungscode",
+                "latest_code_help": "Gib diesen Code vor {{expiresAt}} am Gerät ein. Er kann nur einmal verwendet werden.",
+                "device_name": {
+                    "label": "Gerätename",
+                    "tooltip": "Dieser Name wird für das API-Token verwendet, das vom Gerät erstellt wird.",
+                    "required": "Bitte gib einen Gerätenamen ein."
+                },
+                "expires_in_minutes": {
+                    "label": "Läuft ab in (Minuten)",
+                    "tooltip": "Lege fest, wie lange dieser Kopplungscode gültig bleiben soll."
+                }
+            },
+            "columns": {
+                "name": "Name",
+                "preview": "Vorschau",
+                "created": "Erstellt",
+                "last_used": "Zuletzt verwendet",
+                "expires_at": "Läuft ab"
+            },
+            "empty": "Es wurden noch keine API-Tokens erstellt."
         },
         "extra_fields": {
             "tab": "Extra Felder",

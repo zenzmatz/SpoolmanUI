@@ -4,6 +4,7 @@ import datetime
 import logging
 import shutil
 import sqlite3
+from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
 from os import PathLike
 from pathlib import Path
@@ -219,13 +220,9 @@ def schedule_tasks(scheduler: Scheduler) -> None:
         scheduler.daily(datetime.time(hour=0, minute=0, second=0), _backup_task)  # type: ignore[arg-type]
 
 
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """Get a DB session to be used with FastAPI's dependency system.
-
-    Yields:
-        The database session.
-
-    """
+@asynccontextmanager
+async def db_session_context() -> AsyncGenerator[AsyncSession, None]:
+    """Open a managed async database session."""
     if __db is None or __db.session_maker is None:
         raise RuntimeError("DB is not setup.")
     async with __db.session_maker() as session:
@@ -237,3 +234,14 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             raise exc
         finally:
             await session.close()
+
+
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Get a DB session to be used with FastAPI's dependency system.
+
+    Yields:
+        The database session.
+
+    """
+    async with db_session_context() as session:
+        yield session

@@ -38,3 +38,35 @@ Spoolman is a self-hosted web service designed to help you efficiently manage yo
 
 ## Installation
 Please see the [Installation page on the Wiki](https://github.com/Donkie/Spoolman/wiki/Installation) for details how to install Spoolman.
+
+## Authentication
+
+If you want to expose Spoolman through a reverse proxy such as nginx, you can enable the built-in authentication layer for browser sessions and API tokens.
+
+Set these environment variables on the server:
+
+```env
+SPOOLMAN_AUTH_ENABLED=TRUE
+SPOOLMAN_AUTH_ADMIN_USERNAME=admin
+SPOOLMAN_AUTH_ADMIN_PASSWORD=change-me
+SPOOLMAN_AUTH_SESSION_TTL_HOURS=168
+SPOOLMAN_AUTH_COOKIE_SECURE=TRUE
+```
+
+Notes:
+
+* `SPOOLMAN_AUTH_ADMIN_PASSWORD_FILE` can be used instead of `SPOOLMAN_AUTH_ADMIN_PASSWORD` if you prefer mounting a secret file.
+* `SPOOLMAN_AUTH_COOKIE_SECURE` should stay `TRUE` when Spoolman is served over HTTPS.
+* The bootstrap admin account is created automatically on first start if it does not already exist.
+* After signing in, additional API tokens can be created in `Settings > Access` for scripts and integrations that should use `Authorization: Bearer ...`.
+
+Browser access uses an HTTP-only session cookie. API clients can continue using the REST API, but should authenticate with a Bearer token once authentication is enabled.
+
+### Hardware pairing
+
+Hardware devices such as SpoolmanScale can be paired without typing a long API token manually:
+
+1. Sign in to Spoolman and open `Settings > Access`.
+2. Generate a hardware pairing code. The default device name is `SpoolmanScale` and the default expiry is 15 minutes.
+3. On SpoolmanScale, open `Connection > Hardware Auth > Hardware Code` and enter the six-digit code.
+4. Tap `Register + connect`. The device exchanges the code once, stores the returned Bearer token, and uses it for future Spoolman requests.

@@ -5,23 +5,26 @@
 import asyncio
 import logging
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
-from starlette.requests import Request
 from starlette.responses import Response
 
 from spoolman import env
-from spoolman.database.database import backup_global_db
+from spoolman.auth import authenticate_request, enforce_websocket_auth_if_enabled
+from spoolman.database.database import backup_global_db, db_session_context
 from spoolman.exceptions import ItemNotFoundError
 from spoolman.ws import websocket_manager
 
-from . import export, externaldb, field, filament, insights, models, other, setting, spool, vendor
+from . import auth, export, externaldb, field, filament, insights, models, other, setting, spool, vendor
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Spoolman REST API v1",
     version="1.0.0",
+    docs_url=None if env.is_auth_enabled() else "/docs",
+    redoc_url=None if env.is_auth_enabled() else "/redoc",
+    openapi_url=None if env.is_auth_enabled() else "/openapi.json",
     description="""
     REST API for Spoolman.
 
@@ -32,6 +35,31 @@ app = FastAPI(
     endpoint that listens for changes to any data in the database.
     """,
 )
+
+PUBLIC_PATHS = {
+    "/auth/login",
+    "/auth/status",
+    "/auth/devices/register",
+    "/health",
+}
+
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):  # type: ignore[no-untyped-def]
+    request_path = request.scope.get("path", "")
+    root_path = request.scope.get("root_path", "")
+    if root_path and request_path.startswith(root_path):
+        request_path = request_path[len(root_path) :] or "/"
+    if not env.is_auth_enabled() or request_path in PUBLIC_PATHS:
+        return await call_next(request)
+
+    async with db_session_context() as db:
+        auth_context = await authenticate_request(request, db)
+        if auth_context is None:
+            return JSONResponse(status_code=401, content={"message": "Authentication required."})
+        request.state.auth_context = auth_context
+
+    return await call_next(request)
 
 
 @app.exception_handler(ItemNotFoundError)
@@ -92,6 +120,8 @@ async def backup():  # noqa: ANN201
 async def notify(
     websocket: WebSocket,
 ) -> None:
+    if not await enforce_websocket_auth_if_enabled(websocket):
+        return
     await websocket.accept()
     websocket_manager.connect((), websocket)
     try:
@@ -104,6 +134,7 @@ async def notify(
 
 
 # Add routers
+app.include_router(auth.router)
 app.include_router(filament.router)
 app.include_router(spool.router)
 app.include_router(vendor.router)

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from spoolman.api.v1.models import Message, SettingEvent, SettingResponse
+from spoolman.auth import enforce_websocket_auth_if_enabled
 from spoolman.database import setting
 from spoolman.database.database import get_db_session
 from spoolman.exceptions import ItemNotFoundError
@@ -32,6 +33,8 @@ logger = logging.getLogger(__name__)
 async def notify_any(
     websocket: WebSocket,
 ) -> None:
+    if not await enforce_websocket_auth_if_enabled(websocket):
+        return
     await websocket.accept()
     websocket_manager.connect(("setting",), websocket)
     try:
@@ -131,6 +134,8 @@ async def notify(
         await websocket.close(code=4040, reason=str(e))
         return
 
+    if not await enforce_websocket_auth_if_enabled(websocket):
+        return
     await websocket.accept()
     websocket_manager.connect(("setting", str(key)), websocket)
     try:

@@ -1,4 +1,4 @@
-import { Refine } from "@refinedev/core";
+import { Authenticated, Refine } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
@@ -22,6 +22,7 @@ import { Locale } from "antd/es/locale";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router";
+import authProvider from "./authProvider";
 import dataProvider from "./components/dataProvider";
 import { Favicon } from "./components/favicon";
 import { SpoolmanLayout } from "./components/layout";
@@ -93,6 +94,7 @@ function App() {
         <ColorModeContextProvider>
           <ConfigProvider locale={antdLocale}>
             <Refine
+              authProvider={authProvider}
               dataProvider={dataProvider(getAPIURL())}
               notificationProvider={SpoolmanNotificationProvider}
               i18nProvider={i18nProvider}
@@ -184,15 +186,18 @@ function App() {
               }}
             >
               <Routes>
+                <Route path="/login" element={<LoadablePage name="login" />} />
                 <Route
                   element={
-                    <SpoolmanLayout>
-                      <Outlet />
-                    </SpoolmanLayout>
+                    <Authenticated key="protected-routes" redirectOnFail="/login">
+                      <SpoolmanLayout>
+                        <Outlet />
+                      </SpoolmanLayout>
+                    </Authenticated>
                   }
                 >
                   <Route index element={<LoadablePage name="home" />} />
-                    <Route path="/insights" element={<LoadablePage name="insights" />} />
+                  <Route path="/insights" element={<LoadablePage name="insights" />} />
                   <Route path="/spool">
                     <Route index element={<LoadableResourcePage resource="spools" page="list" />} />
                     <Route

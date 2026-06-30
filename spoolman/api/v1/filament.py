@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from spoolman.api.v1.models import Filament, FilamentEvent, Message, MultiColorDirection
+from spoolman.auth import enforce_websocket_auth_if_enabled
 from spoolman.database import filament
 from spoolman.database.database import get_db_session
 from spoolman.database.utils import SortOrder
@@ -373,6 +374,8 @@ async def find(
 async def notify_any(
     websocket: WebSocket,
 ) -> None:
+    if not await enforce_websocket_auth_if_enabled(websocket):
+        return
     await websocket.accept()
     websocket_manager.connect(("filament",), websocket)
     try:
@@ -410,6 +413,8 @@ async def notify(
     websocket: WebSocket,
     filament_id: int,
 ) -> None:
+    if not await enforce_websocket_auth_if_enabled(websocket):
+        return
     await websocket.accept()
     websocket_manager.connect(("filament", str(filament_id)), websocket)
     try:

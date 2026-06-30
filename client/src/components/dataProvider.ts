@@ -9,7 +9,10 @@ type MethodTypesWithBody = "post" | "put" | "patch";
 const dataProvider = (
   apiUrl: string,
   httpClient: AxiosInstance = axiosInstance,
-): Omit<Required<DataProvider>, "createMany" | "updateMany" | "deleteMany"> => ({
+): Omit<Required<DataProvider>, "createMany" | "updateMany" | "deleteMany"> => {
+  httpClient.defaults.withCredentials = true;
+
+  return {
   getList: async ({ resource, meta, pagination, sorters, filters }) => {
     const url = `${apiUrl}/${resource}`;
 
@@ -169,6 +172,7 @@ const dataProvider = (
 
     return Promise.resolve({ data });
   },
-});
+  };
+};
 
 export default dataProvider;

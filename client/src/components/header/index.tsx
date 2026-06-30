@@ -1,7 +1,7 @@
 import { DownOutlined } from "@ant-design/icons";
 import type { RefineThemedLayoutHeaderProps } from "@refinedev/antd";
-import { useGetLocale, useSetLocale } from "@refinedev/core";
-import { Layout as AntdLayout, Button, Dropdown, MenuProps, Space, Switch, theme } from "antd";
+import { useGetIdentity, useGetLocale, useLogout, useSetLocale, useTranslate } from "@refinedev/core";
+import { Layout as AntdLayout, Button, Dropdown, MenuProps, Space, Switch, Typography, theme } from "antd";
 import React, { useContext } from "react";
 import { ColorModeContext } from "../../contexts/color-mode";
 
@@ -14,6 +14,9 @@ export const Header = ({ sticky }: RefineThemedLayoutHeaderProps) => {
   const { token } = useToken();
   const locale = useGetLocale();
   const changeLanguage = useSetLocale();
+  const t = useTranslate();
+  const { mutate: logout } = useLogout();
+  const { data: identity } = useGetIdentity<{ username: string }>();
   const { mode, setMode } = useContext(ColorModeContext);
 
   const currentLocale = locale();
@@ -42,6 +45,7 @@ export const Header = ({ sticky }: RefineThemedLayoutHeaderProps) => {
   return (
     <AntdLayout.Header style={headerStyles}>
       <Space>
+        {identity?.username && <Typography.Text>{identity.username}</Typography.Text>}
         <Dropdown
           menu={{
             items: menuItems,
@@ -61,6 +65,11 @@ export const Header = ({ sticky }: RefineThemedLayoutHeaderProps) => {
           onChange={() => setMode(mode === "light" ? "dark" : "light")}
           defaultChecked={mode === "dark"}
         />
+        {identity?.username && (
+          <Button type="text" onClick={() => logout()}>
+            {t("buttons.logout")}
+          </Button>
+        )}
         <QRCodeScannerModal />
       </Space>
     </AntdLayout.Header>

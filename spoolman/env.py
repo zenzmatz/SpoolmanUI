@@ -170,6 +170,77 @@ def get_password() -> str | None:
     return os.getenv("SPOOLMAN_DB_PASSWORD")
 
 
+def is_auth_enabled() -> bool:
+    """Get whether application authentication is enabled."""
+    auth_enabled = os.getenv("SPOOLMAN_AUTH_ENABLED", "FALSE").upper()
+    if auth_enabled in {"FALSE", "0"}:
+        return False
+    if auth_enabled in {"TRUE", "1"}:
+        return True
+    raise ValueError(f"Failed to parse SPOOLMAN_AUTH_ENABLED variable: Unknown value '{auth_enabled}'.")
+
+
+def get_auth_admin_username() -> str:
+    """Get the bootstrap admin username."""
+    username = os.getenv("SPOOLMAN_AUTH_ADMIN_USERNAME", "admin").strip()
+    if username == "":
+        raise ValueError("Failed to parse SPOOLMAN_AUTH_ADMIN_USERNAME variable: Username must not be empty.")
+    return username
+
+
+def get_auth_admin_password() -> str | None:
+    """Get the bootstrap admin password from file or environment."""
+    file_path = os.getenv("SPOOLMAN_AUTH_ADMIN_PASSWORD_FILE")
+    if file_path is not None:
+        file = Path(file_path)
+        if not file.exists() or not file.is_file():
+            raise ValueError(
+                "Failed to parse SPOOLMAN_AUTH_ADMIN_PASSWORD_FILE variable: "
+                f'Authentication password file "{file_path}" does not exist.',
+            )
+        try:
+            with file.open(encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError as exc:
+            raise ValueError(
+                "Failed to parse SPOOLMAN_AUTH_ADMIN_PASSWORD_FILE variable: "
+                f'Failed to read password from file "{file_path}": {exc!s}.',
+            ) from exc
+
+    value = os.getenv("SPOOLMAN_AUTH_ADMIN_PASSWORD")
+    return value.strip() if value is not None else None
+
+
+def get_auth_session_ttl_hours() -> int:
+    """Get the session lifetime in hours."""
+    raw_value = os.getenv("SPOOLMAN_AUTH_SESSION_TTL_HOURS", "168")
+    try:
+        value = int(raw_value)
+    except ValueError as exc:
+        raise ValueError(f"Failed to parse SPOOLMAN_AUTH_SESSION_TTL_HOURS variable: {exc!s}") from exc
+    if value < 1:
+        raise ValueError("Failed to parse SPOOLMAN_AUTH_SESSION_TTL_HOURS variable: Value must be at least 1.")
+    return value
+
+
+def get_auth_session_cookie_name() -> str:
+    """Get the session cookie name."""
+    cookie_name = os.getenv("SPOOLMAN_AUTH_SESSION_COOKIE_NAME", "spoolman_session").strip()
+    if cookie_name == "":
+        raise ValueError("Failed to parse SPOOLMAN_AUTH_SESSION_COOKIE_NAME variable: Cookie name must not be empty.")
+    return cookie_name
+
+
+def is_auth_cookie_secure() -> bool:
+    """Get whether auth cookies should be marked secure."""
+    raw_value = os.getenv("SPOOLMAN_AUTH_COOKIE_SECURE", "FALSE").upper()
+    if raw_value in {"FALSE", "0"}:
+        return False
+    if raw_value in {"TRUE", "1"}:
+        return True
+    raise ValueError(f"Failed to parse SPOOLMAN_AUTH_COOKIE_SECURE variable: Unknown value '{raw_value}'.")
+
+
 def get_logging_level() -> int:
     """Get the logging level from environment variables.
 

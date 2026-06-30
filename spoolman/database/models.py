@@ -91,6 +91,71 @@ class Setting(Base):
     last_updated: Mapped[datetime] = mapped_column()
 
 
+class AuthUser(Base):
+    __tablename__ = "auth_user"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    created: Mapped[datetime] = mapped_column()
+    username: Mapped[str] = mapped_column(String(64), index=True, unique=True)
+    password_hash: Mapped[str] = mapped_column(String(512))
+    is_admin: Mapped[bool] = mapped_column(default=True)
+    last_login: Mapped[datetime | None] = mapped_column()
+    sessions: Mapped[list["AuthSession"]] = relationship(
+        back_populates="user",
+        cascade="save-update, merge, delete, delete-orphan",
+    )
+    api_tokens: Mapped[list["AuthApiToken"]] = relationship(
+        back_populates="user",
+        cascade="save-update, merge, delete, delete-orphan",
+    )
+    device_codes: Mapped[list["AuthDeviceCode"]] = relationship(
+        back_populates="user",
+        cascade="save-update, merge, delete, delete-orphan",
+    )
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_session"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("auth_user.id", ondelete="CASCADE"), index=True)
+    user: Mapped["AuthUser"] = relationship(back_populates="sessions")
+    session_hash: Mapped[str] = mapped_column(String(64), index=True, unique=True)
+    created: Mapped[datetime] = mapped_column()
+    last_used: Mapped[datetime] = mapped_column()
+    expires_at: Mapped[datetime] = mapped_column()
+
+
+class AuthApiToken(Base):
+    __tablename__ = "auth_api_token"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("auth_user.id", ondelete="CASCADE"), index=True)
+    user: Mapped["AuthUser"] = relationship(back_populates="api_tokens")
+    name: Mapped[str] = mapped_column(String(128))
+    token_preview: Mapped[str] = mapped_column(String(32))
+    token_hash: Mapped[str] = mapped_column(String(64), index=True, unique=True)
+    created: Mapped[datetime] = mapped_column()
+    last_used: Mapped[datetime | None] = mapped_column()
+    expires_at: Mapped[datetime | None] = mapped_column()
+    revoked_at: Mapped[datetime | None] = mapped_column()
+
+
+class AuthDeviceCode(Base):
+    __tablename__ = "auth_device_code"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("auth_user.id", ondelete="CASCADE"), index=True)
+    user: Mapped["AuthUser"] = relationship(back_populates="device_codes")
+    name: Mapped[str] = mapped_column(String(128))
+    code_preview: Mapped[str] = mapped_column(String(16))
+    code_hash: Mapped[str] = mapped_column(String(64), index=True, unique=True)
+    created: Mapped[datetime] = mapped_column()
+    expires_at: Mapped[datetime] = mapped_column()
+    used_at: Mapped[datetime | None] = mapped_column()
+    token_id: Mapped[int | None] = mapped_column(ForeignKey("auth_api_token.id", ondelete="SET NULL"), index=True)
+
+
 class VendorField(Base):
     __tablename__ = "vendor_field"
 

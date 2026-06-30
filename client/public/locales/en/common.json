@@ -46,6 +46,23 @@
         "saveSuccessful": "Save successful!",
         "validationError": "Validation error: {{error}}"
     },
+    "auth": {
+        "login": {
+            "title": "Sign in",
+            "description": "Authentication is required to use this Spoolman instance.",
+            "username": "Username",
+            "password": "Password",
+            "submit": "Sign in",
+            "username_required": "Please enter your username.",
+            "password_required": "Please enter your password."
+        },
+        "errors": {
+            "login_failed": "Login failed."
+        },
+        "values": {
+            "never": "Never"
+        }
+    },
     "kofi": "Tip me on Ko-fi",
     "loading": "Loading",
     "version": "Version",
@@ -349,6 +366,53 @@
                 "label": "Low stock threshold (%)",
                 "tooltip": "When low stock mode is set to remaining percent, spools at or below this percentage are shown as low stock in Insights."
             }
+        },
+        "access": {
+            "tab": "Access",
+            "description": "Create API tokens for integrations and review active access credentials for this account.",
+            "auth_disabled": "Authentication is currently disabled for this Spoolman instance.",
+            "api_tokens_title": "API tokens",
+            "create_token": "Create token",
+            "create_success": "Token created.",
+            "revoke": "Revoke",
+            "revoke_confirm": "Revoke this token?",
+            "revoke_success": "Token revoked.",
+            "latest_token": "New token",
+            "latest_token_help": "Copy this token now. It is only shown once.",
+            "token_name": {
+                "label": "Token name",
+                "tooltip": "Use a descriptive name so you can recognize which integration uses this token.",
+                "required": "Please enter a token name."
+            },
+            "expires_in_days": {
+                "label": "Expires in (days)",
+                "tooltip": "Choose how long this token should remain valid."
+            },
+            "hardware": {
+                "title": "Hardware pairing",
+                "description": "Generate a short one-time code for hardware devices such as SpoolmanScale. The device exchanges this code for a stored API token.",
+                "create_code": "Create hardware code",
+                "create_success": "Hardware pairing code created.",
+                "latest_code": "Hardware pairing code",
+                "latest_code_help": "Enter this code on the device before {{expiresAt}}. It can only be used once.",
+                "device_name": {
+                    "label": "Device name",
+                    "tooltip": "This name will be used for the API token created by the device.",
+                    "required": "Please enter a device name."
+                },
+                "expires_in_minutes": {
+                    "label": "Expires in (minutes)",
+                    "tooltip": "Choose how long this pairing code should remain valid."
+                }
+            },
+            "columns": {
+                "name": "Name",
+                "preview": "Preview",
+                "created": "Created",
+                "last_used": "Last used",
+                "expires_at": "Expires"
+            },
+            "empty": "No API tokens created yet."
         },
         "extra_fields": {
             "tab": "Extra Fields",
