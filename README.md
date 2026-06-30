@@ -50,13 +50,13 @@ SPOOLMAN_AUTH_ENABLED=TRUE
 SPOOLMAN_AUTH_ADMIN_USERNAME=admin
 SPOOLMAN_AUTH_ADMIN_PASSWORD=change-me
 SPOOLMAN_AUTH_SESSION_TTL_HOURS=168
-SPOOLMAN_AUTH_COOKIE_SECURE=TRUE
+SPOOLMAN_AUTH_COOKIE_SECURE=FALSE
 ```
 
 Notes:
 
 * `SPOOLMAN_AUTH_ADMIN_PASSWORD_FILE` can be used instead of `SPOOLMAN_AUTH_ADMIN_PASSWORD` if you prefer mounting a secret file.
-* `SPOOLMAN_AUTH_COOKIE_SECURE` should stay `TRUE` when Spoolman is served over HTTPS.
+* `SPOOLMAN_AUTH_COOKIE_SECURE` should be `FALSE` while testing over plain HTTP. Set it to `TRUE` when the browser reaches Spoolman over HTTPS through a reverse proxy.
 * The bootstrap admin account is created automatically on first start if it does not already exist.
 * After signing in, additional API tokens can be created in `Settings > Access` for scripts and integrations that should use `Authorization: Bearer ...`.
 

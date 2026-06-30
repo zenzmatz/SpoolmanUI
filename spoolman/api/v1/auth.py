@@ -35,6 +35,7 @@ router = APIRouter(
 
 class AuthStatusResponse(BaseModel):
     enabled: bool = Field()
+    cookie_secure: bool = Field()
 
 
 class AuthUserResponse(BaseModel):
@@ -110,7 +111,7 @@ class AuthDeviceRegisterParameters(BaseModel):
 @router.get("/status", response_model=AuthStatusResponse)
 async def status_endpoint() -> AuthStatusResponse:
     """Return whether authentication is enabled."""
-    return AuthStatusResponse(enabled=env.is_auth_enabled())
+    return AuthStatusResponse(enabled=env.is_auth_enabled(), cookie_secure=env.is_auth_cookie_secure())
 
 
 @router.post(

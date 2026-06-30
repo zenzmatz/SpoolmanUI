@@ -3,6 +3,7 @@ import { getAPIURL } from "./utils/url";
 
 interface AuthStatusResponse {
   enabled: boolean;
+  cookie_secure: boolean;
 }
 
 interface AuthIdentity {
@@ -49,6 +50,22 @@ async function getCurrentUser(): Promise<AuthIdentity | null> {
   return response.json();
 }
 
+function isLikelySecureCookieHttpMismatch(status: AuthStatusResponse): boolean {
+  return (
+    status.cookie_secure &&
+    globalThis.location?.protocol === "http:" &&
+    !["localhost", "127.0.0.1", "[::1]"].includes(globalThis.location.hostname)
+  );
+}
+
+function buildSessionNotPersistedMessage(status: AuthStatusResponse): string {
+  if (isLikelySecureCookieHttpMismatch(status)) {
+    return "Login succeeded, but the browser did not keep the secure session cookie. Use HTTPS or set SPOOLMAN_AUTH_COOKIE_SECURE=FALSE while testing over HTTP.";
+  }
+
+  return "Login succeeded, but the session cookie was not accepted by the browser.";
+}
+
 const authProvider: AuthProvider = {
   login: async (params) => {
     const response = await fetch(`${getAPIURL()}/auth/login`, {
@@ -77,6 +94,15 @@ const authProvider: AuthProvider = {
       return {
         success: false,
         error: buildError(message, response.status),
+      };
+    }
+
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      const status = await getAuthStatus();
+      return {
+        success: false,
+        error: buildError(buildSessionNotPersistedMessage(status), 401),
       };
     }
 
