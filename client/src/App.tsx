@@ -112,6 +112,7 @@ function App() {
                   list: "/insights",
                   meta: {
                     canDelete: false,
+                    label: t("insights.insights"),
                     icon: <DashboardOutlined />,
                   },
                 },

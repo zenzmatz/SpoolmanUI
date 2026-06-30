@@ -353,6 +353,12 @@
     "kofi": "Schick mir ein Trinkgeld über Ko-fi",
     "home": {
         "home": "Home",
+        "dashboard_title": "Dashboard mit Einblicke-Fokus",
+        "dashboard_description": "Starte mit Bestandszustand, Überblick über niedrige Bestände und schnellen Aktionen und springe dann für Details ins Einblicke-Dashboard.",
+        "open_insights": "Einblicke öffnen",
+        "add_spool": "Spule hinzufügen",
+        "insights_card_title": "Operativer Überblick",
+        "insights_card_description": "Nutze Einblicke als tägliche Zentrale für Bestände, Materialien, Farben und letzte Aktivitäten.",
         "welcome": "Willkommen auf deiner Spoolman Instanz!",
         "description": "Es sieht so aus, als hättest du noch keine Spulen hinzugefügt. Schau auf unsere <helpPageLink>Hilfeseite</helpPageLink>, falls du Hilfe beim Start benötigst."
     },
@@ -414,12 +420,14 @@
         "settings": "Einstellungen"
     },
     "insights": {
+        "insights": "Einblicke",
         "title": "Einblicke",
         "description": "Bestandsübersicht, Überwachung niedriger Bestände und Zusammenfassungen nach Ort und Material. Der Schwellwert für niedrigen Bestand wird in den Einstellungen verwaltet.",
         "empty": "Keine Spulen entsprechen den aktuellen Filtern.",
         "filters": {
             "recent_days": "Zeitraum zuletzt genutzt (Tage)",
-            "include_archived": "Archivierte einschließen"
+            "include_archived": "Archivierte einschließen",
+            "threshold": "Schwellwert niedriger Bestand: {{threshold}} g"
         },
         "overview": {
             "active_spools": "Aktive Spulen",

@@ -292,6 +292,12 @@
     },
     "home": {
         "home": "Home",
+        "dashboard_title": "Insights-first dashboard",
+        "dashboard_description": "Start with inventory health, low-stock visibility, and quick actions, then jump into the full Insights dashboard for drill-downs.",
+        "open_insights": "Open Insights",
+        "add_spool": "Add Spool",
+        "insights_card_title": "Operational overview",
+        "insights_card_description": "Use Insights as the daily control center for stock levels, materials, colors, and recent activity.",
         "welcome": "Welcome to your Spoolman instance!",
         "description": "It looks like you haven't added any spools yet. See the <helpPageLink>Help page</helpPageLink> for help getting started."
     },
@@ -365,12 +371,14 @@
         }
     },
     "insights": {
+        "insights": "Insights",
         "title": "Insights",
         "description": "Inventory overview, low stock monitoring, and location/material summaries. The low stock threshold is managed in Settings.",
         "empty": "No spools match the current filters.",
         "filters": {
             "recent_days": "Recent window (days)",
-            "include_archived": "Include archived"
+            "include_archived": "Include archived",
+            "threshold": "Low-stock threshold: {{threshold}} g"
         },
         "overview": {
             "active_spools": "Active spools",

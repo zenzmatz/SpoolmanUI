@@ -117,6 +117,7 @@ async def find(  # noqa: C901, PLR0912
     filament_name: str | None = None,
     filament_id: int | Sequence[int] | None = None,
     filament_material: str | None = None,
+    filament_color_filters: tuple[str | None, str | None] | None = None,
     vendor_name: str | None = None,
     vendor_id: int | Sequence[int] | None = None,
     location: str | None = None,
@@ -145,6 +146,9 @@ async def find(  # noqa: C901, PLR0912
     stmt = add_where_clause_str(stmt, models.Vendor.name, vendor_name)
     stmt = add_where_clause_str_opt(stmt, models.Filament.name, filament_name)
     stmt = add_where_clause_str_opt(stmt, models.Filament.material, filament_material)
+    color_hex_filter, multi_color_hexes_filter = filament_color_filters or (None, None)
+    stmt = add_where_clause_str_opt(stmt, models.Filament.color_hex, color_hex_filter)
+    stmt = add_where_clause_str_opt(stmt, models.Filament.multi_color_hexes, multi_color_hexes_filter)
     stmt = add_where_clause_str_opt(stmt, models.Spool.location, location)
     stmt = add_where_clause_str_opt(stmt, models.Spool.lot_nr, lot_nr)
 

@@ -199,6 +199,30 @@ async def find(
             ),
         ),
     ] = None,
+    filament_color_hex: Annotated[
+        str | None,
+        Query(
+            alias="filament.color_hex",
+            title="Filament Color",
+            description=(
+                "Partial case-insensitive search term for the filament color hex value. "
+                "Separate multiple terms with a comma. Specify an empty string to match spools with no single color. "
+                "Surround a term with quotes to search for the exact term."
+            ),
+        ),
+    ] = None,
+    filament_multi_color_hexes: Annotated[
+        str | None,
+        Query(
+            alias="filament.multi_color_hexes",
+            title="Filament Multi Color",
+            description=(
+                "Partial case-insensitive search term for the filament multi-color hex values. "
+                "Separate multiple terms with a comma. Specify an empty string to match spools with no multi-color "
+                "value. Surround a term with quotes to search for the exact term."
+            ),
+        ),
+    ] = None,
     filament_vendor_name: Annotated[
         str | None,
         Query(
@@ -290,6 +314,7 @@ async def find(
         filament_name=filament_name if filament_name is not None else filament_name_old,
         filament_id=filament_ids,
         filament_material=filament_material if filament_material is not None else filament_material_old,
+        filament_color_filters=(filament_color_hex, filament_multi_color_hexes),
         vendor_name=filament_vendor_name if filament_vendor_name is not None else vendor_name_old,
         vendor_id=filament_vendor_ids,
         location=location,

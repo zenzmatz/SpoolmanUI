@@ -1,4 +1,4 @@
-import { Col, Empty, InputNumber, Row, Select, Space, Switch, Typography } from "antd";
+import { Button, Card, Col, Empty, InputNumber, Row, Select, Space, Switch, Tag, Typography } from "antd";
 import { useTranslate } from "@refinedev/core";
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
@@ -47,6 +47,25 @@ function parseThresholdSetting(value: string | undefined): number {
 
 function getLocationLabel(location: string, unassignedLabel: string): string {
   return location === "Unassigned" ? unassignedLabel : location;
+}
+
+function buildColorDrilldownFilters(colorKey: string): Array<{ field: string; operator: string; value: string[] }> {
+  if (colorKey === "UNKNOWN") {
+    return [
+      { field: "filament.color_hex", operator: "eq", value: ["<empty>"] },
+      { field: "filament.multi_color_hexes", operator: "eq", value: ["<empty>"] },
+    ];
+  }
+
+  if (colorKey.startsWith("MULTI:")) {
+    return [{ field: "filament.multi_color_hexes", operator: "eq", value: [`"${colorKey.slice(6)}"`] }];
+  }
+
+  return [{ field: "filament.color_hex", operator: "eq", value: [`"${colorKey.replace("#", "")}"`] }];
+}
+
+function hasActiveFilters(filters: InsightsFilters): boolean {
+  return filters.allow_archived || filters.location !== undefined || filters.material !== undefined || filters.days !== 30;
 }
 
 export const Insights = () => {
@@ -108,54 +127,88 @@ export const Insights = () => {
     );
   };
 
-  return (
-    <Space direction="vertical" size="large" style={{ display: "flex" }}>
-      <div>
-        <Typography.Title level={2} style={{ marginBottom: 0 }}>
-          {t("insights.title")}
-        </Typography.Title>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          {t("insights.description")}
-        </Typography.Paragraph>
-      </div>
+  const openColor = (colorKey: string) => {
+    navigate(
+      buildSpoolDrilldownPath({
+        filters: buildColorDrilldownFilters(colorKey),
+        showArchived: filters.allow_archived,
+      }),
+    );
+  };
 
-      <Space wrap>
-        <div>
-          <Typography.Text strong>{t("insights.filters.recent_days")}</Typography.Text>
-          <br />
-          <InputNumber min={1} max={365} value={filters.days} onChange={(value) => updateParam("days", value ?? 30)} />
-        </div>
-        <div>
-          <Typography.Text strong>{t("spool.fields.material")}</Typography.Text>
-          <br />
-          <Select
-            allowClear
-            style={{ minWidth: 180 }}
-            value={filters.material}
-            options={(materialOptions.data ?? []).map((material) => ({ label: material, value: material }))}
-            onChange={(value) => updateParam("material", value)}
-          />
-        </div>
-        <div>
-          <Typography.Text strong>{t("spool.fields.location")}</Typography.Text>
-          <br />
-          <Select
-            allowClear
-            style={{ minWidth: 180 }}
-            value={filters.location}
-            options={(locationOptions.data ?? []).map((location) => ({
-              label: getLocationLabel(location, t("insights.values.unassigned")),
-              value: location,
-            }))}
-            onChange={(value) => updateParam("location", value)}
-          />
-        </div>
-        <div>
-          <Typography.Text strong>{t("insights.filters.include_archived")}</Typography.Text>
-          <br />
-          <Switch checked={filters.allow_archived} onChange={(checked) => updateParam("allow_archived", checked || undefined)} />
-        </div>
-      </Space>
+  const clearFilters = () => {
+    setSearchParams(new URLSearchParams(), { replace: true });
+  };
+
+  return (
+    <div style={{ maxWidth: 1360, margin: "0 auto", width: "100%" }}>
+      <Space direction="vertical" size="middle" style={{ display: "flex" }}>
+      <Card>
+        <Row gutter={[16, 16]} align="middle">
+          <Col xs={24} xl={9}>
+            <Typography.Title level={2} style={{ marginBottom: 0 }}>
+              {t("insights.title")}
+            </Typography.Title>
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
+              {t("insights.description")}
+            </Typography.Paragraph>
+            <Space size={[8, 8]} wrap>
+              <Tag color="blue">{t("insights.filters.threshold", { threshold: filters.threshold_g.toFixed(0) })}</Tag>
+              {hasActiveFilters(filters) && <Tag>{t("buttons.filter")}</Tag>}
+            </Space>
+          </Col>
+          <Col xs={24} xl={15}>
+            <Row gutter={[12, 12]}>
+              <Col xs={24} sm={12} lg={12} xl={6}>
+                <Typography.Text strong>{t("insights.filters.recent_days")}</Typography.Text>
+                <InputNumber
+                  min={1}
+                  max={365}
+                  style={{ width: "100%", marginTop: 8 }}
+                  value={filters.days}
+                  onChange={(value) => updateParam("days", value ?? 30)}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={12} xl={6}>
+                <Typography.Text strong>{t("spool.fields.material")}</Typography.Text>
+                <Select
+                  allowClear
+                  style={{ width: "100%", marginTop: 8 }}
+                  value={filters.material}
+                  options={(materialOptions.data ?? []).map((material) => ({ label: material, value: material }))}
+                  onChange={(value) => updateParam("material", value)}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={12} xl={6}>
+                <Typography.Text strong>{t("spool.fields.location")}</Typography.Text>
+                <Select
+                  allowClear
+                  style={{ width: "100%", marginTop: 8 }}
+                  value={filters.location}
+                  options={(locationOptions.data ?? []).map((location) => ({
+                    label: getLocationLabel(location, t("insights.values.unassigned")),
+                    value: location,
+                  }))}
+                  onChange={(value) => updateParam("location", value)}
+                />
+              </Col>
+              <Col xs={24} sm={12} lg={12} xl={6}>
+                <Typography.Text strong>{t("insights.filters.include_archived")}</Typography.Text>
+                <div style={{ marginTop: 12 }}>
+                  <Switch checked={filters.allow_archived} onChange={(checked) => updateParam("allow_archived", checked || undefined)} />
+                </div>
+              </Col>
+              <Col xs={24}>
+                <Space wrap>
+                  <Button onClick={clearFilters} disabled={!hasActiveFilters(filters)}>
+                    {t("buttons.clearFilters")}
+                  </Button>
+                </Space>
+              </Col>
+            </Row>
+          </Col>
+        </Row>
+      </Card>
 
       <OverviewCards overview={overview.data} loading={overview.isLoading} onOpenLowStock={openLowStockList} />
 
@@ -167,7 +220,7 @@ export const Insights = () => {
         onEditSpool={(spoolId) => navigate(`/spool/edit/${spoolId}`)}
       />
 
-      <Row gutter={[16, 16]}>
+      <Row gutter={[12, 12]}>
         <Col xs={24} xl={12}>
           <MaterialBreakdown items={byMaterial.data?.items ?? []} loading={byMaterial.isLoading} onOpenMaterial={openMaterial} />
         </Col>
@@ -176,7 +229,7 @@ export const Insights = () => {
         </Col>
       </Row>
 
-      <ColorBreakdown items={byColor.data?.items ?? []} loading={byColor.isLoading} />
+      <ColorBreakdown items={byColor.data?.items ?? []} loading={byColor.isLoading} onOpenColor={openColor} />
 
       <RecentActivity
         items={recentActivity.data?.items ?? []}
@@ -186,7 +239,8 @@ export const Insights = () => {
       />
 
       {!overview.isLoading && (overview.data?.spool_count ?? 0) === 0 && <Empty description={t("insights.empty")} />}
-    </Space>
+      </Space>
+    </div>
   );
 };
 

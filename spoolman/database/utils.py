@@ -16,6 +16,26 @@ class SortOrder(Enum):
     DESC = 2
 
 
+def split_filter_terms(value: str) -> list[str]:
+    """Split a comma-separated filter string while preserving quoted commas."""
+    parts: list[str] = []
+    current: list[str] = []
+    in_quotes = False
+
+    for char in value:
+        if char == '"':
+            in_quotes = not in_quotes
+            current.append(char)
+        elif char == "," and not in_quotes:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+
+    parts.append("".join(current))
+    return parts
+
+
 def parse_nested_field(base_obj: type[models.Base], field: str) -> attributes.InstrumentedAttribute[Any]:
     """Parse a nested field string into a sqlalchemy field object."""
     fields = field.split(".")
@@ -46,7 +66,7 @@ def add_where_clause_str_opt(
     """Add a where clause to a select statement for an optional string field."""
     if value is not None:
         conditions = []
-        for value_part in value.split(","):
+        for value_part in split_filter_terms(value):
             # If part is empty, search for empty fields
             if len(value_part) == 0:
                 conditions.append(field.is_(None))
@@ -70,7 +90,7 @@ def add_where_clause_str(
     """Add a where clause to a select statement for a string field."""
     if value is not None:
         conditions = []
-        for value_part in value.split(","):
+        for value_part in split_filter_terms(value):
             # If part is empty, search for empty fields
             if len(value_part) == 0:
                 conditions.append(field == "")

@@ -6,6 +6,7 @@ import { IColorSummary } from "../model";
 interface ColorBreakdownProps {
   items: IColorSummary[];
   loading: boolean;
+  onOpenColor: (colorKey: string) => void;
 }
 
 function getDisplayName(item: IColorSummary, unknownLabel: string, multiColorLabel: string): string {
@@ -20,15 +21,15 @@ function getDisplayName(item: IColorSummary, unknownLabel: string, multiColorLab
   return item.display_name;
 }
 
-export function ColorBreakdown({ items, loading }: Readonly<ColorBreakdownProps>) {
+export function ColorBreakdown({ items, loading, onOpenColor }: Readonly<ColorBreakdownProps>) {
   const t = useTranslate();
 
   return (
     <Card title={t("insights.sections.by_color")} loading={loading}>
       <Row gutter={[12, 12]}>
         {items.map((item) => (
-          <Col xs={24} md={12} xl={8} key={item.color_key}>
-            <Card size="small">
+          <Col xs={24} sm={12} xl={8} key={item.color_key}>
+            <Card size="small" hoverable onClick={() => onOpenColor(item.color_key)} style={{ height: "100%" }}>
               <Space align="start">
                 {item.display_hex ? <SpoolIcon color={item.display_hex} /> : <div style={{ width: 24 }} />}
                 <div>
