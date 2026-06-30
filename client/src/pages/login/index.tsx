@@ -1,6 +1,6 @@
 import { Button, Card, Form, Input, Typography, message } from "antd";
 import { useTranslate } from "@refinedev/core";
-import { useNavigate } from "react-router";
+import { useState } from "react";
 import authProvider from "../../authProvider";
 
 interface LoginValues {
@@ -10,24 +10,33 @@ interface LoginValues {
 
 export const Login = () => {
   const t = useTranslate();
-  const navigate = useNavigate();
   const [form] = Form.useForm<LoginValues>();
   const [messageApi, contextHolder] = message.useMessage();
+  const [submitting, setSubmitting] = useState(false);
 
   const onFinish = async (values: LoginValues) => {
     const redirectTo = new URLSearchParams(globalThis.location.search).get("to") ?? "/";
-    const result = await authProvider.login({
-      ...values,
-      to: redirectTo,
-    });
+    setSubmitting(true);
 
-    if (!result.success) {
-      messageApi.error(result.error?.message ?? t("auth.errors.login_failed"));
+    try {
+      const result = await authProvider.login({
+        ...values,
+        to: redirectTo,
+      });
+
+      if (!result.success) {
+        messageApi.error(result.error?.message ?? t("auth.errors.login_failed"));
+        form.setFieldValue("password", "");
+        return;
+      }
+
+      globalThis.location.assign((result.redirectTo as string | undefined) ?? "/");
+    } catch (error) {
+      messageApi.error(error instanceof Error ? error.message : t("auth.errors.login_failed"));
       form.setFieldValue("password", "");
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    navigate((result.redirectTo as string | undefined) ?? "/", { replace: true });
   };
 
   return (
@@ -66,7 +75,7 @@ export const Login = () => {
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
-            <Button type="primary" htmlType="submit" block>
+            <Button type="primary" htmlType="submit" block loading={submitting}>
               {t("auth.login.submit")}
             </Button>
           </Form.Item>
