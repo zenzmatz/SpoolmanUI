@@ -3,7 +3,7 @@
 from collections import defaultdict
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Literal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,13 +11,46 @@ from spoolman.database import spool
 from spoolman.database import models as db_models
 
 
-def _remaining_weight(db_spool: db_models.Spool) -> float | None:
+ThresholdMode = Literal["weight", "percent"]
+
+
+def _spool_capacity(db_spool: db_models.Spool) -> float | None:
     baseline = db_spool.initial_weight
     if baseline is None:
         baseline = db_spool.filament.weight
+    return baseline
+
+
+def _remaining_weight(db_spool: db_models.Spool) -> float | None:
+    baseline = _spool_capacity(db_spool)
     if baseline is None:
         return None
     return max(baseline - db_spool.used_weight, 0.0)
+
+
+def _remaining_percentage(db_spool: db_models.Spool) -> float | None:
+    baseline = _spool_capacity(db_spool)
+    if baseline is None or baseline <= 0:
+        return None
+    remaining_weight = _remaining_weight(db_spool)
+    if remaining_weight is None:
+        return None
+    return (remaining_weight / baseline) * 100
+
+
+def _is_low_stock(
+    db_spool: db_models.Spool,
+    *,
+    threshold_mode: ThresholdMode,
+    threshold_g: float,
+    threshold_percent: float,
+) -> bool:
+    if threshold_mode == "percent":
+        remaining_percentage = _remaining_percentage(db_spool)
+        return remaining_percentage is not None and 0 < remaining_percentage <= threshold_percent
+
+    remaining_weight = _remaining_weight(db_spool)
+    return remaining_weight is not None and 0 < remaining_weight <= threshold_g
 
 
 def _normalized_location(location: str | None) -> str:
@@ -77,7 +110,9 @@ async def get_overview(
     *,
     db: AsyncSession,
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode = "percent",
     threshold_g: float = 200.0,
+    threshold_percent: float = 20.0,
     location: str | None = None,
     material: str | None = None,
     vendor_id: int | Sequence[int] | None = None,
@@ -93,7 +128,16 @@ async def get_overview(
     )
 
     known_remaining_weights = [weight for item in spools if (weight := _remaining_weight(item)) is not None]
-    low_stock_count = sum(1 for weight in known_remaining_weights if 0 < weight <= threshold_g)
+    low_stock_count = sum(
+        1
+        for item in spools
+        if _is_low_stock(
+            item,
+            threshold_mode=threshold_mode,
+            threshold_g=threshold_g,
+            threshold_percent=threshold_percent,
+        )
+    )
     out_of_stock_count = sum(1 for weight in known_remaining_weights if weight <= 0)
     locations = {_normalized_location(item.location) for item in spools}
     materials = {_normalized_material(item.filament.material) for item in spools}
@@ -117,7 +161,9 @@ async def get_overview(
 async def get_low_stock(
     *,
     db: AsyncSession,
+    threshold_mode: ThresholdMode = "percent",
     threshold_g: float = 200.0,
+    threshold_percent: float = 20.0,
     limit: int = 20,
     allow_archived: bool = False,
     location: str | None = None,
@@ -137,7 +183,12 @@ async def get_low_stock(
     items = []
     for item in spools:
         remaining_weight = _remaining_weight(item)
-        if remaining_weight is None or remaining_weight > threshold_g:
+        if not _is_low_stock(
+            item,
+            threshold_mode=threshold_mode,
+            threshold_g=threshold_g,
+            threshold_percent=threshold_percent,
+        ):
             continue
         items.append(
             {
@@ -148,6 +199,7 @@ async def get_low_stock(
                 "material": _normalized_material(item.filament.material),
                 "location": _normalized_location(item.location),
                 "remaining_weight_g": round(remaining_weight, 2),
+                "remaining_percentage": round(_remaining_percentage(item), 2) if _remaining_percentage(item) is not None else None,
                 "used_weight_g": round(item.used_weight, 2),
                 "color_hex": item.filament.color_hex,
                 "multi_color_hexes": item.filament.multi_color_hexes,
@@ -156,9 +208,25 @@ async def get_low_stock(
             },
         )
 
-    items.sort(key=lambda spool_item: (spool_item["remaining_weight_g"], spool_item["spool_id"]))
+    if threshold_mode == "percent":
+        items.sort(
+            key=lambda spool_item: (
+                spool_item["remaining_percentage"] if spool_item["remaining_percentage"] is not None else float("inf"),
+                spool_item["remaining_weight_g"] if spool_item["remaining_weight_g"] is not None else float("inf"),
+                spool_item["spool_id"],
+            ),
+        )
+    else:
+        items.sort(
+            key=lambda spool_item: (
+                spool_item["remaining_weight_g"] if spool_item["remaining_weight_g"] is not None else float("inf"),
+                spool_item["spool_id"],
+            ),
+        )
     return {
+        "threshold_mode": threshold_mode,
         "threshold_g": threshold_g,
+        "threshold_percent": threshold_percent,
         "total": len(items),
         "items": items[:limit],
     }
@@ -168,7 +236,9 @@ async def get_material_summary(
     *,
     db: AsyncSession,
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode = "percent",
     threshold_g: float = 200.0,
+    threshold_percent: float = 20.0,
     location: str | None = None,
     material: str | None = None,
     vendor_id: int | Sequence[int] | None = None,
@@ -203,7 +273,12 @@ async def get_material_summary(
         if remaining_weight is not None:
             group["remaining_weight_total_g"] += remaining_weight
             total_remaining += remaining_weight
-            if 0 < remaining_weight <= threshold_g:
+            if _is_low_stock(
+                item,
+                threshold_mode=threshold_mode,
+                threshold_g=threshold_g,
+                threshold_percent=threshold_percent,
+            ):
                 group["low_stock_count"] += 1
 
     items = []
@@ -230,7 +305,9 @@ async def get_location_summary(
     *,
     db: AsyncSession,
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode = "percent",
     threshold_g: float = 200.0,
+    threshold_percent: float = 20.0,
     location: str | None = None,
     material: str | None = None,
     vendor_id: int | Sequence[int] | None = None,
@@ -263,7 +340,12 @@ async def get_location_summary(
         remaining_weight = _remaining_weight(item)
         if remaining_weight is not None:
             group["remaining_weight_total_g"] += remaining_weight
-            if 0 < remaining_weight <= threshold_g:
+            if _is_low_stock(
+                item,
+                threshold_mode=threshold_mode,
+                threshold_g=threshold_g,
+                threshold_percent=threshold_percent,
+            ):
                 group["low_stock_count"] += 1
 
     items = []

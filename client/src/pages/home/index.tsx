@@ -50,7 +50,7 @@ export const Home = () => {
   const t = useTranslate();
   const navigate = useNavigate();
   const insightsFilters = useMemo(
-    () => ({ threshold_g: 200, days: 30, allow_archived: false }),
+    () => ({ days: 30, allow_archived: false }),
     [],
   );
   const overview = useInsightsOverview(insightsFilters);

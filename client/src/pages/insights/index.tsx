@@ -19,12 +19,11 @@ import { LowStockTable } from "./components/lowStockTable";
 import { MaterialBreakdown } from "./components/materialBreakdown";
 import { OverviewCards } from "./components/overviewCards";
 import { RecentActivity } from "./components/recentActivity";
-import { InsightsFilters } from "./model";
+import { InsightsFilters, InsightsThresholdMode } from "./model";
 
 function buildFilters(searchParams: URLSearchParams): InsightsFilters {
   const daysValue = Number(searchParams.get("days") ?? "30");
   return {
-    threshold_g: 200,
     days: Number.isFinite(daysValue) ? daysValue : 30,
     allow_archived: searchParams.get("allow_archived") === "true",
     location: searchParams.get("location") ?? undefined,
@@ -32,17 +31,37 @@ function buildFilters(searchParams: URLSearchParams): InsightsFilters {
   };
 }
 
-function parseThresholdSetting(value: string | undefined): number {
+function parseNumberSetting(value: string | undefined, fallback: number): number {
   if (!value) {
-    return 200;
+    return fallback;
   }
 
   try {
     const parsed = JSON.parse(value);
-    return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : 200;
+    return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : fallback;
   } catch {
-    return 200;
+    return fallback;
   }
+}
+
+function parseThresholdModeSetting(value: string | undefined): InsightsThresholdMode {
+  if (!value) {
+    return "percent";
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return parsed === "weight" || parsed === "percent" ? parsed : "percent";
+  } catch {
+    return "percent";
+  }
+}
+
+function buildThresholdLabel(mode: InsightsThresholdMode, thresholdG: number, thresholdPercent: number): string {
+  if (mode === "percent") {
+    return `${thresholdPercent.toFixed(0)}%`;
+  }
+  return `${thresholdG.toFixed(0)} g`;
 }
 
 function getLocationLabel(location: string, unassignedLabel: string): string {
@@ -72,14 +91,25 @@ export const Insights = () => {
   const navigate = useNavigate();
   const t = useTranslate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const thresholdSetting = useGetSetting("insights_low_stock_threshold_g");
+  const thresholdModeSetting = useGetSetting("insights_low_stock_threshold_mode");
+  const thresholdWeightSetting = useGetSetting("insights_low_stock_threshold_g");
+  const thresholdPercentSetting = useGetSetting("insights_low_stock_threshold_percent");
   const filters = useMemo(() => {
     const next = buildFilters(searchParams);
+    const thresholdMode = parseThresholdModeSetting(thresholdModeSetting.data?.value);
+    const thresholdG = parseNumberSetting(thresholdWeightSetting.data?.value, 200);
+    const thresholdPercent = parseNumberSetting(thresholdPercentSetting.data?.value, 20);
     return {
       ...next,
-      threshold_g: parseThresholdSetting(thresholdSetting.data?.value),
+      threshold_mode: thresholdMode,
+      threshold_g: thresholdMode === "weight" ? thresholdG : undefined,
+      threshold_percent: thresholdMode === "percent" ? thresholdPercent : undefined,
     };
-  }, [searchParams, thresholdSetting.data?.value]);
+  }, [searchParams, thresholdModeSetting.data?.value, thresholdPercentSetting.data?.value, thresholdWeightSetting.data?.value]);
+  const thresholdLabel = useMemo(
+    () => buildThresholdLabel(filters.threshold_mode ?? "percent", filters.threshold_g ?? 200, filters.threshold_percent ?? 20),
+    [filters.threshold_g, filters.threshold_mode, filters.threshold_percent],
+  );
   const materialOptions = useSpoolmanMaterials(true);
   const locationOptions = useSpoolmanLocations(true);
 
@@ -153,7 +183,7 @@ export const Insights = () => {
               {t("insights.description")}
             </Typography.Paragraph>
             <Space size={[8, 8]} wrap>
-              <Tag color="blue">{t("insights.filters.threshold", { threshold: filters.threshold_g.toFixed(0) })}</Tag>
+              <Tag color="blue">{t("insights.filters.threshold", { threshold: thresholdLabel })}</Tag>
               {hasActiveFilters(filters) && <Tag>{t("buttons.filter")}</Tag>}
             </Space>
           </Col>
@@ -215,7 +245,8 @@ export const Insights = () => {
       <LowStockTable
         items={lowStock.data?.items ?? []}
         loading={lowStock.isLoading}
-        thresholdG={filters.threshold_g}
+        thresholdLabel={thresholdLabel}
+        thresholdMode={filters.threshold_mode ?? "percent"}
         onOpenSpool={(spoolId) => navigate(`/spool/show/${spoolId}`)}
         onEditSpool={(spoolId) => navigate(`/spool/edit/${spoolId}`)}
       />

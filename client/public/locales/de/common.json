@@ -380,10 +380,22 @@
         },
         "insights": {
             "tab": "Einblicke",
-            "description": "Konfiguriere das Standardverhalten der Einblicke-Ansicht.",
+            "description": "Konfiguriere das Standardverhalten der Einblicke-Ansicht, einschließlich ob niedriger Bestand nach verbleibenden Gramm oder verbleibendem Prozent bewertet wird.",
+            "low_stock_threshold_mode": {
+                "label": "Modus für niedrigen Bestand",
+                "tooltip": "Wähle, ob niedriger Bestand anhand des verbleibenden Gewichts in Gramm oder des verbleibenden Prozents der Spule berechnet wird.",
+                "options": {
+                    "percent": "Verbleibender Prozentsatz",
+                    "weight": "Verbleibendes Gewicht"
+                }
+            },
             "low_stock_threshold_g": {
                 "label": "Schwellwert für niedrigen Bestand (g)",
-                "tooltip": "Spulen mit diesem verbleibenden Gewicht oder weniger werden in den Einblicken als niedriger Bestand angezeigt."
+                "tooltip": "Wenn der Modus für niedrigen Bestand auf verbleibendes Gewicht gesetzt ist, werden Spulen mit diesem verbleibenden Gewicht oder weniger in den Einblicken als niedriger Bestand angezeigt."
+            },
+            "low_stock_threshold_percent": {
+                "label": "Schwellwert für niedrigen Bestand (%)",
+                "tooltip": "Wenn der Modus für niedrigen Bestand auf verbleibenden Prozentsatz gesetzt ist, werden Spulen mit diesem Prozentsatz oder weniger in den Einblicken als niedriger Bestand angezeigt."
             }
         },
         "extra_fields": {
@@ -427,7 +439,7 @@
         "filters": {
             "recent_days": "Zeitraum zuletzt genutzt (Tage)",
             "include_archived": "Archivierte einschließen",
-            "threshold": "Schwellwert niedriger Bestand: {{threshold}} g"
+            "threshold": "Schwellwert niedriger Bestand: {{threshold}}"
         },
         "overview": {
             "active_spools": "Aktive Spulen",
@@ -436,7 +448,7 @@
             "remaining_inventory": "Verbleibender Bestand"
         },
         "low_stock": {
-            "title": "Spulen mit niedrigem Bestand (Schwellwert {{threshold}} g)"
+            "title": "Spulen mit niedrigem Bestand (Schwellwert {{threshold}})"
         },
         "sections": {
             "by_material": "Nach Material",
@@ -445,7 +457,8 @@
             "recent_activity": "Kürzliche Aktivität ({{days}} Tage)"
         },
         "columns": {
-            "materials": "Materialien"
+            "materials": "Materialien",
+            "remaining_percent": "Verbleibend %"
         },
         "actions": {
             "view_spools": "Spulen anzeigen"

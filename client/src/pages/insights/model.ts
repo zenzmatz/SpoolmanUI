@@ -1,5 +1,9 @@
+export type InsightsThresholdMode = "weight" | "percent";
+
 export interface InsightsFilters {
-  threshold_g: number;
+  threshold_mode?: InsightsThresholdMode;
+  threshold_g?: number;
+  threshold_percent?: number;
   days: number;
   allow_archived: boolean;
   location?: string;
@@ -28,6 +32,7 @@ export interface ILowStockSpool {
   material?: string;
   location?: string;
   remaining_weight_g?: number;
+  remaining_percentage?: number;
   used_weight_g: number;
   color_hex?: string;
   multi_color_hexes?: string;
@@ -36,7 +41,9 @@ export interface ILowStockSpool {
 }
 
 export interface ILowStockResponse {
+  threshold_mode: InsightsThresholdMode;
   threshold_g: number;
+  threshold_percent: number;
   total: number;
   items: ILowStockSpool[];
 }

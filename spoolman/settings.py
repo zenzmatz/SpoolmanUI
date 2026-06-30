@@ -72,4 +72,6 @@ register_setting("base_url", SettingType.STRING, json.dumps(""))
 
 register_setting("locations", SettingType.ARRAY, json.dumps([]))
 register_setting("locations_spoolorders", SettingType.OBJECT, json.dumps({}))
+register_setting("insights_low_stock_threshold_mode", SettingType.STRING, json.dumps("percent"))
 register_setting("insights_low_stock_threshold_g", SettingType.NUMBER, json.dumps(200))
+register_setting("insights_low_stock_threshold_percent", SettingType.NUMBER, json.dumps(20))

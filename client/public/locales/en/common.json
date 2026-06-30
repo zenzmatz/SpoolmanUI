@@ -332,10 +332,22 @@
         },
         "insights": {
             "tab": "Insights",
-            "description": "Configure default dashboard behavior for the insights view.",
+            "description": "Configure default dashboard behavior for the insights view, including whether low stock is judged by remaining grams or remaining percent.",
+            "low_stock_threshold_mode": {
+                "label": "Low stock mode",
+                "tooltip": "Choose whether low stock is calculated from remaining weight in grams or remaining percentage of the spool.",
+                "options": {
+                    "percent": "Remaining percent",
+                    "weight": "Remaining weight"
+                }
+            },
             "low_stock_threshold_g": {
                 "label": "Low stock threshold (g)",
-                "tooltip": "Spools at or below this remaining weight are shown as low stock in Insights."
+                "tooltip": "When low stock mode is set to remaining weight, spools at or below this remaining weight are shown as low stock in Insights."
+            },
+            "low_stock_threshold_percent": {
+                "label": "Low stock threshold (%)",
+                "tooltip": "When low stock mode is set to remaining percent, spools at or below this percentage are shown as low stock in Insights."
             }
         },
         "extra_fields": {
@@ -378,7 +390,7 @@
         "filters": {
             "recent_days": "Recent window (days)",
             "include_archived": "Include archived",
-            "threshold": "Low-stock threshold: {{threshold}} g"
+            "threshold": "Low-stock threshold: {{threshold}}"
         },
         "overview": {
             "active_spools": "Active spools",
@@ -387,7 +399,7 @@
             "remaining_inventory": "Remaining inventory"
         },
         "low_stock": {
-            "title": "Low stock spools ({{threshold}} g threshold)"
+            "title": "Low stock spools ({{threshold}} threshold)"
         },
         "sections": {
             "by_material": "By material",
@@ -396,7 +408,8 @@
             "recent_activity": "Recent activity ({{days}} days)"
         },
         "columns": {
-            "materials": "Materials"
+            "materials": "Materials",
+            "remaining_percent": "Remaining %"
         },
         "actions": {
             "view_spools": "Show Spools"

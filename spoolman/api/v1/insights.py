@@ -2,7 +2,7 @@
 
 import json
 from collections.abc import Sequence
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
@@ -18,6 +18,9 @@ router = APIRouter(
     prefix="/insights",
     tags=["insights"],
 )
+
+
+ThresholdMode = Literal["weight", "percent"]
 
 
 class InsightsOverview(BaseModel):
@@ -42,6 +45,7 @@ class LowStockSpool(BaseModel):
     material: str | None = Field(None)
     location: str | None = Field(None)
     remaining_weight_g: float | None = Field(None)
+    remaining_percentage: float | None = Field(None)
     used_weight_g: float = Field()
     color_hex: str | None = Field(None)
     multi_color_hexes: str | None = Field(None)
@@ -50,7 +54,9 @@ class LowStockSpool(BaseModel):
 
 
 class LowStockResponse(BaseModel):
+    threshold_mode: ThresholdMode = Field()
     threshold_g: float = Field()
+    threshold_percent: float = Field()
     total: int = Field()
     items: list[LowStockSpool] = Field(default_factory=list)
 
@@ -134,16 +140,44 @@ def _common_filters(
     }
 
 
-async def _resolve_threshold_g(db: AsyncSession, threshold_g: float | None) -> float:
-    if threshold_g is not None:
-        return threshold_g
-
-    definition = parse_setting("insights_low_stock_threshold_g")
+async def _resolve_setting_value(db: AsyncSession, key: str) -> str:
+    definition = parse_setting(key)
     try:
         db_item = await db_setting.get(db, definition)
-        return float(json.loads(db_item.value))
+        return db_item.value
     except ItemNotFoundError:
-        return float(json.loads(definition.default))
+        return definition.default
+
+
+async def _resolve_threshold_mode(
+    db: AsyncSession,
+    threshold_mode: ThresholdMode | None,
+    threshold_g: float | None,
+    threshold_percent: float | None,
+) -> ThresholdMode:
+    if threshold_mode is not None:
+        return threshold_mode
+    if threshold_percent is not None and threshold_g is None:
+        return "percent"
+    if threshold_g is not None and threshold_percent is None:
+        return "weight"
+    return json.loads(await _resolve_setting_value(db, "insights_low_stock_threshold_mode"))
+
+
+async def _resolve_threshold_config(
+    db: AsyncSession,
+    threshold_mode: ThresholdMode | None,
+    threshold_g: float | None,
+    threshold_percent: float | None,
+) -> tuple[ThresholdMode, float, float]:
+    resolved_mode = await _resolve_threshold_mode(db, threshold_mode, threshold_g, threshold_percent)
+    resolved_threshold_g = threshold_g
+    if resolved_threshold_g is None:
+        resolved_threshold_g = float(json.loads(await _resolve_setting_value(db, "insights_low_stock_threshold_g")))
+    resolved_threshold_percent = threshold_percent
+    if resolved_threshold_percent is None:
+        resolved_threshold_percent = float(json.loads(await _resolve_setting_value(db, "insights_low_stock_threshold_percent")))
+    return resolved_mode, resolved_threshold_g, resolved_threshold_percent
 
 
 @router.get("/overview")
@@ -151,17 +185,26 @@ async def overview(
     *,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode | None = None,
     threshold_g: Annotated[float | None, Query(ge=0)] = None,
+    threshold_percent: Annotated[float | None, Query(ge=0, le=100)] = None,
     location: str | None = None,
     material: str | None = None,
     vendor_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
     filament_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
 ) -> InsightsOverview:
-    resolved_threshold_g = await _resolve_threshold_g(db, threshold_g)
+    resolved_mode, resolved_threshold_g, resolved_threshold_percent = await _resolve_threshold_config(
+        db,
+        threshold_mode,
+        threshold_g,
+        threshold_percent,
+    )
     return InsightsOverview(
         **await insights.get_overview(
             db=db,
+            threshold_mode=resolved_mode,
             threshold_g=resolved_threshold_g,
+            threshold_percent=resolved_threshold_percent,
             **_common_filters(
                 allow_archived=allow_archived,
                 location=location,
@@ -178,18 +221,27 @@ async def low_stock(
     *,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode | None = None,
     threshold_g: Annotated[float | None, Query(ge=0)] = None,
+    threshold_percent: Annotated[float | None, Query(ge=0, le=100)] = None,
     limit: Annotated[int, Query(ge=1, le=200)] = 20,
     location: str | None = None,
     material: str | None = None,
     vendor_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
     filament_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
 ) -> LowStockResponse:
-    resolved_threshold_g = await _resolve_threshold_g(db, threshold_g)
+    resolved_mode, resolved_threshold_g, resolved_threshold_percent = await _resolve_threshold_config(
+        db,
+        threshold_mode,
+        threshold_g,
+        threshold_percent,
+    )
     return LowStockResponse(
         **await insights.get_low_stock(
             db=db,
+            threshold_mode=resolved_mode,
             threshold_g=resolved_threshold_g,
+            threshold_percent=resolved_threshold_percent,
             limit=limit,
             **_common_filters(
                 allow_archived=allow_archived,
@@ -207,16 +259,25 @@ async def by_material(
     *,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode | None = None,
     threshold_g: Annotated[float | None, Query(ge=0)] = None,
+    threshold_percent: Annotated[float | None, Query(ge=0, le=100)] = None,
     location: str | None = None,
     material: str | None = None,
     vendor_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
     filament_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
 ) -> MaterialSummaryResponse:
-    resolved_threshold_g = await _resolve_threshold_g(db, threshold_g)
+    resolved_mode, resolved_threshold_g, resolved_threshold_percent = await _resolve_threshold_config(
+        db,
+        threshold_mode,
+        threshold_g,
+        threshold_percent,
+    )
     items = await insights.get_material_summary(
         db=db,
+        threshold_mode=resolved_mode,
         threshold_g=resolved_threshold_g,
+        threshold_percent=resolved_threshold_percent,
         **_common_filters(
             allow_archived=allow_archived,
             location=location,
@@ -233,16 +294,25 @@ async def by_location(
     *,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     allow_archived: bool = False,
+    threshold_mode: ThresholdMode | None = None,
     threshold_g: Annotated[float | None, Query(ge=0)] = None,
+    threshold_percent: Annotated[float | None, Query(ge=0, le=100)] = None,
     location: str | None = None,
     material: str | None = None,
     vendor_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
     filament_id: Annotated[str | None, Query(pattern=r"^-?\d+(,-?\d+)*$")] = None,
 ) -> LocationSummaryResponse:
-    resolved_threshold_g = await _resolve_threshold_g(db, threshold_g)
+    resolved_mode, resolved_threshold_g, resolved_threshold_percent = await _resolve_threshold_config(
+        db,
+        threshold_mode,
+        threshold_g,
+        threshold_percent,
+    )
     items = await insights.get_location_summary(
         db=db,
+        threshold_mode=resolved_mode,
         threshold_g=resolved_threshold_g,
+        threshold_percent=resolved_threshold_percent,
         **_common_filters(
             allow_archived=allow_archived,
             location=location,

@@ -12,7 +12,15 @@ import {
 
 function buildQueryString(filters: InsightsFilters): string {
   const params = new URLSearchParams();
-  params.set("threshold_g", String(filters.threshold_g));
+  if (filters.threshold_mode) {
+    params.set("threshold_mode", filters.threshold_mode);
+  }
+  if (filters.threshold_g !== undefined) {
+    params.set("threshold_g", String(filters.threshold_g));
+  }
+  if (filters.threshold_percent !== undefined) {
+    params.set("threshold_percent", String(filters.threshold_percent));
+  }
   params.set("days", String(filters.days));
   if (filters.allow_archived) {
     params.set("allow_archived", "true");
