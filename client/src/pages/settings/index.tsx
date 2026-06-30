@@ -1,4 +1,4 @@
-import { FileOutlined, HighlightOutlined, SolutionOutlined, ToolOutlined, UserOutlined } from "@ant-design/icons";
+import { DashboardOutlined, FileOutlined, HighlightOutlined, SolutionOutlined, ToolOutlined, UserOutlined } from "@ant-design/icons";
 import { useTranslate } from "@refinedev/core";
 import { Menu, theme } from "antd";
 import { Content } from "antd/es/layout/layout";
@@ -7,6 +7,7 @@ import utc from "dayjs/plugin/utc";
 import { Route, Routes, useNavigate } from "react-router";
 import { ExtraFieldsSettings } from "./extraFieldsSettings";
 import { GeneralSettings } from "./generalSettings";
+import { InsightsSettings } from "./insightsSettings";
 
 dayjs.extend(utc);
 
@@ -18,7 +19,7 @@ export const Settings = () => {
   const navigate = useNavigate();
 
   const getCurrentKey = () => {
-    const path = window.location.pathname.replace("/settings", "");
+    const path = globalThis.location.pathname.replace("/settings", "");
     // Remove starting slash and ending slash if exists and return
     return path.replace(/^\/|\/$/g, "");
   };
@@ -57,6 +58,7 @@ export const Settings = () => {
           }}
           items={[
             { key: "", label: t("settings.general.tab"), icon: <ToolOutlined /> },
+            { key: "insights", label: t("settings.insights.tab"), icon: <DashboardOutlined /> },
             {
               key: "extra",
               label: t("settings.extra_fields.tab"),
@@ -87,6 +89,7 @@ export const Settings = () => {
         <main>
           <Routes>
             <Route index element={<GeneralSettings />} />
+            <Route path="/insights" element={<InsightsSettings />} />
             <Route path="/extra/:entityType" element={<ExtraFieldsSettings />} />
           </Routes>
         </main>

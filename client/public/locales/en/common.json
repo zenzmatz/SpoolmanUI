@@ -324,6 +324,14 @@
                 "tooltip": "Round prices to the nearest whole number."
             }
         },
+        "insights": {
+            "tab": "Insights",
+            "description": "Configure default dashboard behavior for the insights view.",
+            "low_stock_threshold_g": {
+                "label": "Low stock threshold (g)",
+                "tooltip": "Spools at or below this remaining weight are shown as low stock in Insights."
+            }
+        },
         "extra_fields": {
             "tab": "Extra Fields",
             "description": "<p>Here you can add extra custom fields to your entities.</p><p>Once a field is added, you can not change its key or type, and for choice type fields you can not remove choices or change the multi choice state. If you remove a field, the associated data for all entities will be deleted.</p><p>The key is what other programs read/write the data as, so if your custom field is supposed to integrate with a third-party program, make sure to set it correctly. Default value is only applied to new items.</p><p>Extra fields can not be sorted or filtered in the table views.</p>",

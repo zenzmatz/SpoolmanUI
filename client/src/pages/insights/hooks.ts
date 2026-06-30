@@ -1,16 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAPIURL } from "../../utils/url";
 import {
+  IColorSummaryResponse,
   IInsightsOverview,
   ILocationSummaryResponse,
   ILowStockResponse,
   IMaterialSummaryResponse,
+  IRecentActivityResponse,
   InsightsFilters,
 } from "./model";
 
 function buildQueryString(filters: InsightsFilters): string {
   const params = new URLSearchParams();
   params.set("threshold_g", String(filters.threshold_g));
+  params.set("days", String(filters.days));
   if (filters.allow_archived) {
     params.set("allow_archived", "true");
   }
@@ -56,6 +59,20 @@ export function useInsightsByLocation(filters: InsightsFilters) {
   return useQuery<ILocationSummaryResponse>({
     queryKey: ["insights", "by-location", filters],
     queryFn: async () => fetchJson<ILocationSummaryResponse>("/insights/by-location", filters),
+  });
+}
+
+export function useInsightsByColor(filters: InsightsFilters) {
+  return useQuery<IColorSummaryResponse>({
+    queryKey: ["insights", "by-color", filters],
+    queryFn: async () => fetchJson<IColorSummaryResponse>("/insights/by-color", filters),
+  });
+}
+
+export function useInsightsRecentActivity(filters: InsightsFilters) {
+  return useQuery<IRecentActivityResponse>({
+    queryKey: ["insights", "recent-activity", filters],
+    queryFn: async () => fetchJson<IRecentActivityResponse>("/insights/recent-activity", filters),
   });
 }
 

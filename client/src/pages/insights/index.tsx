@@ -2,27 +2,59 @@ import { Col, Empty, InputNumber, Row, Select, Space, Switch, Typography } from 
 import { useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useSpoolmanLocations, useSpoolmanMaterials } from "../../components/otherModels";
-import { buildSpoolDrilldownPath, useInsightsByLocation, useInsightsByMaterial, useInsightsLowStock, useInsightsOverview } from "./hooks";
+import { useGetSetting } from "../../utils/querySettings";
+import {
+  buildSpoolDrilldownPath,
+  useInsightsByColor,
+  useInsightsByLocation,
+  useInsightsByMaterial,
+  useInsightsLowStock,
+  useInsightsOverview,
+  useInsightsRecentActivity,
+} from "./hooks";
+import { ColorBreakdown } from "./components/colorBreakdown";
 import { LocationBreakdown } from "./components/locationBreakdown";
 import { LowStockTable } from "./components/lowStockTable";
 import { MaterialBreakdown } from "./components/materialBreakdown";
 import { OverviewCards } from "./components/overviewCards";
+import { RecentActivity } from "./components/recentActivity";
 import { InsightsFilters } from "./model";
 
 function buildFilters(searchParams: URLSearchParams): InsightsFilters {
-  const thresholdValue = Number(searchParams.get("threshold_g") ?? "200");
+  const daysValue = Number(searchParams.get("days") ?? "30");
   return {
-    threshold_g: Number.isFinite(thresholdValue) ? thresholdValue : 200,
+    threshold_g: 200,
+    days: Number.isFinite(daysValue) ? daysValue : 30,
     allow_archived: searchParams.get("allow_archived") === "true",
     location: searchParams.get("location") ?? undefined,
     material: searchParams.get("material") ?? undefined,
   };
 }
 
+function parseThresholdSetting(value: string | undefined): number {
+  if (!value) {
+    return 200;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    return typeof parsed === "number" && Number.isFinite(parsed) ? parsed : 200;
+  } catch {
+    return 200;
+  }
+}
+
 export const Insights = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const filters = useMemo(() => buildFilters(searchParams), [searchParams]);
+  const thresholdSetting = useGetSetting("insights_low_stock_threshold_g");
+  const filters = useMemo(() => {
+    const next = buildFilters(searchParams);
+    return {
+      ...next,
+      threshold_g: parseThresholdSetting(thresholdSetting.data?.value),
+    };
+  }, [searchParams, thresholdSetting.data?.value]);
   const materialOptions = useSpoolmanMaterials(true);
   const locationOptions = useSpoolmanLocations(true);
 
@@ -30,6 +62,8 @@ export const Insights = () => {
   const lowStock = useInsightsLowStock(filters);
   const byMaterial = useInsightsByMaterial(filters);
   const byLocation = useInsightsByLocation(filters);
+  const byColor = useInsightsByColor(filters);
+  const recentActivity = useInsightsRecentActivity(filters);
 
   const updateParam = (key: string, value?: string | number | boolean) => {
     const next = new URLSearchParams(searchParams);
@@ -75,15 +109,15 @@ export const Insights = () => {
           Insights
         </Typography.Title>
         <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-          Inventory overview, low stock monitoring, and location/material summaries.
+          Inventory overview, low stock monitoring, and location/material summaries. The low stock threshold is managed in Settings.
         </Typography.Paragraph>
       </div>
 
       <Space wrap>
         <div>
-          <Typography.Text strong>Threshold (g)</Typography.Text>
+          <Typography.Text strong>Recent window (days)</Typography.Text>
           <br />
-          <InputNumber min={0} value={filters.threshold_g} onChange={(value) => updateParam("threshold_g", value ?? 200)} />
+          <InputNumber min={1} max={365} value={filters.days} onChange={(value) => updateParam("days", value ?? 30)} />
         </div>
         <div>
           <Typography.Text strong>Material</Typography.Text>
@@ -132,6 +166,15 @@ export const Insights = () => {
           <LocationBreakdown items={byLocation.data?.items ?? []} loading={byLocation.isLoading} onOpenLocation={openLocation} />
         </Col>
       </Row>
+
+      <ColorBreakdown items={byColor.data?.items ?? []} loading={byColor.isLoading} />
+
+      <RecentActivity
+        items={recentActivity.data?.items ?? []}
+        loading={recentActivity.isLoading}
+        days={filters.days}
+        onOpenSpool={(spoolId) => navigate(`/spool/show/${spoolId}`)}
+      />
 
       {!overview.isLoading && (overview.data?.spool_count ?? 0) === 0 && <Empty description="No spools match the current filters." />}
     </Space>

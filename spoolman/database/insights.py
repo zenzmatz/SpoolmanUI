@@ -2,7 +2,7 @@
 
 from collections import defaultdict
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,6 +41,16 @@ def _vendor_name(db_spool: db_models.Spool) -> str | None:
 
 def _filament_name(db_spool: db_models.Spool) -> str | None:
     return db_spool.filament.name
+
+
+def _color_bucket(db_spool: db_models.Spool) -> tuple[str, str, str | None]:
+    filament = db_spool.filament
+    if filament.color_hex:
+        color_hex = filament.color_hex.replace("#", "").upper()
+        return (f"#{color_hex}", f"#{color_hex}", color_hex)
+    if filament.multi_color_hexes:
+        return (f"MULTI:{filament.multi_color_hexes}", "Multi-color", None)
+    return ("UNKNOWN", "Unknown", None)
 
 
 async def _find_spools(
@@ -270,3 +280,101 @@ async def get_location_summary(
 
     items.sort(key=lambda item: (-item["remaining_weight_total_g"], -item["spool_count"], item["location"]))
     return items
+
+
+async def get_color_summary(
+    *,
+    db: AsyncSession,
+    allow_archived: bool = False,
+    location: str | None = None,
+    material: str | None = None,
+    vendor_id: int | Sequence[int] | None = None,
+    filament_id: int | Sequence[int] | None = None,
+) -> list[dict[str, Any]]:
+    spools = await _find_spools(
+        db=db,
+        allow_archived=allow_archived,
+        location=location,
+        material=material,
+        vendor_id=vendor_id,
+        filament_id=filament_id,
+    )
+
+    grouped: dict[str, dict[str, Any]] = defaultdict(
+        lambda: {
+            "display_name": "Unknown",
+            "display_hex": None,
+            "spool_count": 0,
+            "remaining_weight_total_g": 0.0,
+        },
+    )
+
+    for item in spools:
+        color_key, display_name, display_hex = _color_bucket(item)
+        group = grouped[color_key]
+        group["display_name"] = display_name
+        group["display_hex"] = display_hex
+        group["spool_count"] += 1
+        remaining_weight = _remaining_weight(item)
+        if remaining_weight is not None:
+            group["remaining_weight_total_g"] += remaining_weight
+
+    items = []
+    for color_key, group in grouped.items():
+        items.append(
+            {
+                "color_key": color_key,
+                "display_name": group["display_name"],
+                "display_hex": group["display_hex"],
+                "spool_count": group["spool_count"],
+                "remaining_weight_total_g": round(group["remaining_weight_total_g"], 2),
+            },
+        )
+
+    items.sort(key=lambda item: (-item["remaining_weight_total_g"], -item["spool_count"], item["display_name"]))
+    return items
+
+
+async def get_recent_activity(
+    *,
+    db: AsyncSession,
+    days: int = 30,
+    limit: int = 20,
+    allow_archived: bool = False,
+    location: str | None = None,
+    material: str | None = None,
+    vendor_id: int | Sequence[int] | None = None,
+    filament_id: int | Sequence[int] | None = None,
+) -> dict[str, Any]:
+    spools = await _find_spools(
+        db=db,
+        allow_archived=allow_archived,
+        location=location,
+        material=material,
+        vendor_id=vendor_id,
+        filament_id=filament_id,
+    )
+
+    cutoff = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=days)
+    items = []
+    for item in spools:
+        if item.last_used is None or item.last_used < cutoff:
+            continue
+        items.append(
+            {
+                "spool_id": item.id,
+                "filament_name": _filament_name(item),
+                "vendor_name": _vendor_name(item),
+                "material": _normalized_material(item.filament.material),
+                "location": _normalized_location(item.location),
+                "last_used": item.last_used,
+                "remaining_weight_g": round(_remaining_weight(item), 2) if _remaining_weight(item) is not None else None,
+                "used_weight_g": round(item.used_weight, 2),
+            },
+        )
+
+    items.sort(key=lambda item: (item["last_used"], item["spool_id"]), reverse=True)
+    return {
+        "days": days,
+        "items": items[:limit],
+    }

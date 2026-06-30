@@ -1,5 +1,6 @@
 export interface InsightsFilters {
   threshold_g: number;
+  days: number;
   allow_archived: boolean;
   location?: string;
   material?: string;
@@ -63,4 +64,32 @@ export interface ILocationSummary {
 
 export interface ILocationSummaryResponse {
   items: ILocationSummary[];
+}
+
+export interface IColorSummary {
+  color_key: string;
+  display_name: string;
+  display_hex?: string;
+  spool_count: number;
+  remaining_weight_total_g: number;
+}
+
+export interface IColorSummaryResponse {
+  items: IColorSummary[];
+}
+
+export interface IRecentActivityItem {
+  spool_id: number;
+  filament_name?: string;
+  vendor_name?: string;
+  material?: string;
+  location?: string;
+  last_used: string;
+  remaining_weight_g?: number;
+  used_weight_g: number;
+}
+
+export interface IRecentActivityResponse {
+  days: number;
+  items: IRecentActivityItem[];
 }
