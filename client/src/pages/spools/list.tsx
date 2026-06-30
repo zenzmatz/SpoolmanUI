@@ -13,7 +13,7 @@ import { useInvalidate, useNavigation, useTranslate } from "@refinedev/core";
 import { Button, Dropdown, Modal, Table } from "antd";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   Action,
@@ -112,6 +112,16 @@ export const SpoolList = () => {
 
   // State for the switch to show archived spools
   const [showArchived, setShowArchived] = useSavedState("spoolList-showArchived", false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(globalThis.location.hash.substring(1));
+    const hashValue = params.get("showArchived");
+    if (hashValue === "true") {
+      setShowArchived(true);
+    } else if (hashValue === "false") {
+      setShowArchived(false);
+    }
+  }, [setShowArchived]);
 
   // Fetch data from the API
   // To provide the live updates, we use a custom solution (useLiveify) instead of the built-in refine "liveMode" feature.

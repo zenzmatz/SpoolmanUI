@@ -6,6 +6,7 @@ import { ErrorComponent } from "@refinedev/antd";
 import "@refinedev/antd/dist/reset.css";
 
 import {
+  DashboardOutlined,
   FileOutlined,
   HighlightOutlined,
   HomeOutlined,
@@ -107,6 +108,14 @@ function App() {
                   },
                 },
                 {
+                  name: "insights",
+                  list: "/insights",
+                  meta: {
+                    canDelete: false,
+                    icon: <DashboardOutlined />,
+                  },
+                },
+                {
                   name: "spool",
                   list: "/spool",
                   create: "/spool/create",
@@ -182,6 +191,7 @@ function App() {
                   }
                 >
                   <Route index element={<LoadablePage name="home" />} />
+                    <Route path="/insights" element={<LoadablePage name="insights" />} />
                   <Route path="/spool">
                     <Route index element={<LoadableResourcePage resource="spools" page="list" />} />
                     <Route
