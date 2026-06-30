@@ -65,7 +65,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=phase1-latest
+            type=raw,value=latest
             type=sha,prefix=sha-
             type=raw,value=${{ inputs.image_tag }},enable=${{ inputs.image_tag != '' }}
 

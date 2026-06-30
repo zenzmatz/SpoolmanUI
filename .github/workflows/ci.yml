@@ -2,8 +2,6 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
     tags:
       - "v*"
   pull_request:
@@ -335,7 +333,7 @@ jobs:
   # Don't run this for pull requests
   #
   publish-images:
-    if: ${{ github.event_name != 'pull_request' }}
+    if: ${{ github.event_name != 'pull_request' && github.repository == 'Donkie/Spoolman' }}
     needs: [test, build-amd64, build-arm64, build-armv7, style, build-client]
     runs-on: ubuntu-latest
     permissions:
@@ -420,7 +418,7 @@ jobs:
   # Create Github Release if CI was triggered by a tag
   #
   publish-release:
-    if: ${{ (github.event_name != 'pull_request') && startsWith(github.event.ref, 'refs/tags/v') }}
+    if: ${{ github.repository == 'Donkie/Spoolman' && github.event_name != 'pull_request' && startsWith(github.event.ref, 'refs/tags/v') }}
     needs: [publish-images]
     runs-on: ubuntu-latest
     permissions:
